@@ -1,47 +1,31 @@
-name: Java Calculator CI/CD
+name: 🧮 Calculator — Full CI/CD Pipeline
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Triggers
+# ─────────────────────────────────────────────────────────────────────────────
 on:
   push:
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Permissions needed for GitHub Pages deployment
+# ─────────────────────────────────────────────────────────────────────────────
+permissions:
+  contents: read
+  pages:    write
+  id-token: write
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Jobs
+# ─────────────────────────────────────────────────────────────────────────────
 jobs:
-  # ── Job 1: Build & Test ───────────────────────────────────────────────
-  test:
-    name: Build & Run JUnit 5 Tests
+
+  # ── Job 1: Java — Build & JUnit 5 Tests ────────────────────────────────────
+  test-java:
+    name: ☕ Java — Build & JUnit 5 Tests
     runs-on: ubuntu-latest
-
-    steps:
-      - name: ⬇️ Checkout repository
-        uses: actions/checkout@v4
-
-      - name: ☕ Set up JDK 17 (Temurin)
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: maven          # Cache ~/.m2 to speed up builds
-
-      - name: 🔨 Build project (compile only)
-        run: mvn -B compile --no-transfer-progress
-
-      - name: 🧪 Run JUnit 5 tests
-        run: mvn -B test --no-transfer-progress
-
-      - name: 📊 Upload Surefire test reports
-        if: always()            # Upload even when tests fail
-        uses: actions/upload-artifact@v4
-        with:
-          name: surefire-reports
-          path: target/surefire-reports/
-          retention-days: 14
-
-  # ── Job 2: Package JAR (only on push to main/master) ─────────────────
-  package:
-    name: Package JAR
-    runs-on: ubuntu-latest
-    needs: test                 # Only runs after tests pass
 
     steps:
       - name: ⬇️ Checkout repository
@@ -54,7 +38,38 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: 📦 Package JAR (skip tests — already ran in 'test' job)
+      - name: 🔨 Compile source
+        run: mvn -B compile --no-transfer-progress
+
+      - name: 🧪 Run JUnit 5 tests (51 tests)
+        run: mvn -B test --no-transfer-progress
+
+      - name: 📊 Upload Surefire reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/
+          retention-days: 14
+
+  # ── Job 2: Java — Package JAR ──────────────────────────────────────────────
+  package-java:
+    name: 📦 Java — Package JAR
+    runs-on: ubuntu-latest
+    needs: test-java          # Only runs after all tests pass
+
+    steps:
+      - name: ⬇️ Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ☕ Set up JDK 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: 📦 Package JAR (tests already ran in test-java job)
         run: mvn -B package -DskipTests --no-transfer-progress
 
       - name: 🚀 Upload JAR artifact
@@ -63,3 +78,73 @@ jobs:
           name: calculator-jar
           path: target/*.jar
           retention-days: 30
+
+  # ── Job 3: Web — Validate HTML / CSS / JS ──────────────────────────────────
+  validate-web:
+    name: 🌐 Web — Validate Calculator Files
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📁 Verify required files exist
+        run: |
+          echo "Checking web calculator files..."
+          test -f calculator/index.html   && echo "✅ index.html found"   || (echo "❌ index.html missing" && exit 1)
+          test -f calculator/style.css    && echo "✅ style.css found"    || (echo "❌ style.css missing"  && exit 1)
+          test -f calculator/calculator.js && echo "✅ calculator.js found" || (echo "❌ calculator.js missing" && exit 1)
+
+      - name: 🟢 Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 🔍 Check JavaScript syntax (Node parse)
+        run: node --check calculator/calculator.js && echo "✅ JavaScript syntax OK"
+
+      - name: 📏 Check file sizes (sanity check)
+        run: |
+          HTML_SIZE=$(wc -c < calculator/index.html)
+          CSS_SIZE=$(wc -c  < calculator/style.css)
+          JS_SIZE=$(wc -c   < calculator/calculator.js)
+          echo "index.html  : ${HTML_SIZE} bytes"
+          echo "style.css   : ${CSS_SIZE} bytes"
+          echo "calculator.js: ${JS_SIZE} bytes"
+          [ $HTML_SIZE -gt 100 ] && echo "✅ HTML non-empty" || (echo "❌ HTML too small" && exit 1)
+          [ $CSS_SIZE  -gt 100 ] && echo "✅ CSS non-empty"  || (echo "❌ CSS too small"  && exit 1)
+          [ $JS_SIZE   -gt 100 ] && echo "✅ JS non-empty"   || (echo "❌ JS too small"   && exit 1)
+
+      - name: 🔗 Verify CSS & JS are referenced in HTML
+        run: |
+          grep -q 'style.css'      calculator/index.html && echo "✅ style.css linked in HTML"    || (echo "❌ style.css not linked" && exit 1)
+          grep -q 'calculator.js'  calculator/index.html && echo "✅ calculator.js linked in HTML" || (echo "❌ calculator.js not linked" && exit 1)
+
+  # ── Job 4: Web — Deploy to GitHub Pages ────────────────────────────────────
+  deploy-web:
+    name: 🚀 Web — Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: [ test-java, validate-web ]   # Both Java tests AND web validation must pass
+
+    # Only deploy on direct push to master (not on PRs)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - name: ⬇️ Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Configure GitHub Pages
+        uses: actions/configure-pages@v4
+
+      - name: 📤 Upload calculator/ as Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: calculator/         # Deploy only the web calculator folder
+
+      - name: 🌍 Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
