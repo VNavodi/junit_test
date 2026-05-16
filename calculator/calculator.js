@@ -17,17 +17,18 @@
 
 // ── State ──────────────────────────────────────────────────────────────────
 const state = {
-  current:       '0',     // what shows on the display
-  previous:      '',      // left operand stored
-  operator:      null,    // pending operator
-  justEvaluated: false,   // did we just press "="?
-  expression:    '',      // history display string
-  memory:        0,       // M register
-  angleDeg:      true,    // DEG = true, RAD = false
-  parenDepth:    0,       // how many open parens
-  history:       [],      // [{expr, result}]
-  historyOpen:   false,
-  mode:          'standard',
+  current:            '0',     // what shows on the display
+  previous:           '',      // left operand stored
+  operator:           null,    // pending operator
+  justEvaluated:      false,   // did we just press "="?
+  waitingForOperand:  false,   // did we just press an operator? clear display on next digit
+  expression:         '',      // history display string
+  memory:             0,       // M register
+  angleDeg:           true,    // DEG = true, RAD = false
+  parenDepth:         0,       // how many open parens
+  history:            [],      // [{expr, result}]
+  historyOpen:        false,
+  mode:               'standard',
 };
 
 // ── DOM refs ───────────────────────────────────────────────────────────────
@@ -109,9 +110,15 @@ function applyOperator(prev, op, curr) {
 // ── Input handlers ─────────────────────────────────────────────────────────
 function inputDigit(d) {
   if (state.justEvaluated) {
-    state.current      = d;
-    state.expression   = '';
-    state.justEvaluated = false;
+    // After "=" — start a brand-new calculation
+    state.current           = d;
+    state.expression        = '';
+    state.justEvaluated     = false;
+    state.waitingForOperand = false;
+  } else if (state.waitingForOperand) {
+    // After an operator — replace the display with the new digit
+    state.current           = d;
+    state.waitingForOperand = false;
   } else {
     state.current = state.current === '0' ? d : state.current + d;
   }
@@ -120,9 +127,14 @@ function inputDigit(d) {
 
 function inputDot() {
   if (state.justEvaluated) {
-    state.current      = '0.';
-    state.justEvaluated = false;
-    state.expression   = '';
+    state.current           = '0.';
+    state.justEvaluated     = false;
+    state.waitingForOperand = false;
+    state.expression        = '';
+  } else if (state.waitingForOperand) {
+    // After an operator — start a fresh decimal number
+    state.current           = '0.';
+    state.waitingForOperand = false;
   } else if (!state.current.includes('.')) {
     state.current += '.';
   }
@@ -132,8 +144,8 @@ function inputDot() {
 function inputOp(op) {
   highlightOp(op);
 
-  if (state.operator && !state.justEvaluated) {
-    // chain: compute running total
+  if (state.operator && !state.justEvaluated && !state.waitingForOperand) {
+    // Chain: compute running total (e.g. 5 + 3 × → computes 5+3 first)
     const result    = applyOperator(state.previous, state.operator, state.current);
     state.previous  = fmtNum(result);
     state.current   = fmtNum(result);
@@ -141,9 +153,10 @@ function inputOp(op) {
     state.previous = state.current;
   }
 
-  state.operator      = op;
-  state.justEvaluated = false;
-  state.expression    = `${state.previous} ${op}`;
+  state.operator          = op;
+  state.justEvaluated     = false;
+  state.waitingForOperand = true;   // ← next digit replaces the display
+  state.expression        = `${state.previous} ${op}`;
   updateDisplay();
 }
 
@@ -169,12 +182,13 @@ function calculate() {
 }
 
 function clearAll() {
-  state.current       = '0';
-  state.previous      = '';
-  state.operator      = null;
-  state.justEvaluated = false;
-  state.expression    = '';
-  state.parenDepth    = 0;
+  state.current           = '0';
+  state.previous          = '';
+  state.operator          = null;
+  state.justEvaluated     = false;
+  state.waitingForOperand = false;
+  state.expression        = '';
+  state.parenDepth        = 0;
   highlightOp(null);
   updateDisplay();
 }
