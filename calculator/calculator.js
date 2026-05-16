@@ -343,18 +343,29 @@ function setMode(mode) {
 
 // ── Keyboard support ───────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
+  // If a button is focused, don't let it also fire its click event via Enter/Space
+  if (document.activeElement && document.activeElement.classList.contains('btn')) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      document.activeElement.blur();
+    }
+  }
+
   const k = e.key;
-  if (k >= '0' && k <= '9')          { inputDigit(k); pulse(`btn-${k}`); }
-  else if (k === '.')                 { inputDot(); pulse('btn-dot'); }
-  else if (k === '+')                 { inputOp('+'); pulse('btn-add'); }
-  else if (k === '-')                 { inputOp('−'); pulse('btn-sub'); }
-  else if (k === '*')                 { inputOp('×'); pulse('btn-mul'); }
-  else if (k === '/')                 { e.preventDefault(); inputOp('÷'); pulse('btn-div'); }
-  else if (k === '^')                 { inputOp('^'); }
-  else if (k === 'Enter' || k === '='){ calculate(); pulse('btn-eq'); }
-  else if (k === 'Backspace')         { backspace(); }
-  else if (k === 'Escape')            { clearAll(); pulse('btn-ac'); }
-  else if (k === '%')                 { percent(); pulse('btn-pct'); }
+
+  if      (k >= '0' && k <= '9')           { e.preventDefault(); inputDigit(k); pulse(`btn-${k}`); }
+  else if (k === '.')                        { e.preventDefault(); inputDot();    pulse('btn-dot'); }
+  else if (k === '+')                        { e.preventDefault(); inputOp('+'); pulse('btn-add'); }
+  else if (k === '-')                        { e.preventDefault(); inputOp('\u2212'); pulse('btn-sub'); }
+  else if (k === '*')                        { e.preventDefault(); inputOp('\u00d7'); pulse('btn-mul'); }
+  else if (k === '/')                        { e.preventDefault(); inputOp('\u00f7'); pulse('btn-div'); }
+  else if (k === '^')                        { e.preventDefault(); inputOp('^'); }
+  else if (k === 'Enter' || k === '=')       { e.preventDefault(); calculate();  pulse('btn-eq'); }
+  else if (k === 'Backspace' || k === 'Delete') { e.preventDefault(); backspace(); }
+  else if (k === 'Escape' || k === 'c' || k === 'C') { e.preventDefault(); clearAll(); pulse('btn-ac'); }
+  else if (k === '%')                        { e.preventDefault(); percent(); pulse('btn-pct'); }
+  else if (k === 's')                        { sciOp('sqrt'); }
+  else if (k === 'F9')                       { e.preventDefault(); toggleSign(); }
 });
 
 function pulse(id) {
@@ -374,12 +385,25 @@ function backspace() {
   updateDisplay();
 }
 
+// ── Auto-blur buttons so keyboard always works ────────────────────────────
+document.addEventListener('mouseup', e => {
+  // After any mouse click on a button, immediately remove focus
+  // so subsequent keyboard presses go straight to the document handler
+  if (e.target && (e.target.classList.contains('btn') ||
+                   e.target.classList.contains('mode-btn') ||
+                   e.target.classList.contains('toggle-history-btn'))) {
+    setTimeout(() => e.target.blur(), 50);
+  }
+});
+
 // ── Keyboard hint ──────────────────────────────────────────────────────────
 const hint = document.createElement('div');
 hint.className = 'kb-hint';
-hint.innerHTML = '<kbd>⌨</kbd> keyboard supported';
+hint.innerHTML = '<kbd>0-9</kbd> <kbd>+</kbd> <kbd>-</kbd> <kbd>*</kbd> <kbd>/</kbd> <kbd>Enter</kbd> <kbd>Esc</kbd> <kbd>Bksp</kbd>';
 document.body.appendChild(hint);
 
 // ── Boot ───────────────────────────────────────────────────────────────────
 updateDisplay();
 renderHistory();
+// Ensure document captures all keyboard events from the start
+window.focus();

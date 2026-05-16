@@ -54,12 +54,17 @@
   --transition:    all 0.18s cubic-bezier(.4,0,.2,1);
 }
 
-html, body {
+html {
   height: 100%;
+  overflow-y: auto;        /* allow scrolling when content is taller than viewport */
+  scroll-behavior: smooth;
+}
+body {
+  min-height: 100%;
   font-family: 'Inter', sans-serif;
   background: var(--bg);
   color: var(--text-primary);
-  overflow: hidden;
+  overflow-x: hidden;      /* no horizontal scroll */
 }
 
 /* =============================================
@@ -114,10 +119,10 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;   /* was center — center clips the top when content overflows */
   min-height: 100vh;
-  padding: 20px;
-  gap: 16px;
+  padding: 28px 20px 40px;       /* top padding ensures mode-toggle is always visible */
+  gap: 14px;
 }
 
 /* =============================================
@@ -256,7 +261,10 @@ html, body {
   overflow: hidden;
   user-select: none;
   outline: none;
+  /* Prevent buttons from stealing keyboard focus — keeps keyboard events on document */
+  -webkit-tap-highlight-color: transparent;
 }
+.btn:focus { outline: none; box-shadow: var(--shadow-btn); }
 .btn::after {
   content: '';
   position: absolute;
@@ -500,16 +508,23 @@ html, body {
 /* =============================================
    RESPONSIVE
    ============================================= */
+@media (max-height: 800px) {
+  .btn { height: 56px; }
+  .btn-sci, .btn-util { height: 42px; }
+  .main-display { font-size: 38px; }
+  .display { min-height: 95px; }
+}
 @media (max-height: 700px) {
-  .btn { height: 54px; }
-  .btn-sci, .btn-util { height: 40px; }
-  .main-display { font-size: 36px; }
-  .display { min-height: 90px; }
+  .btn { height: 50px; }
+  .btn-sci, .btn-util { height: 38px; }
+  .main-display { font-size: 32px; }
+  .display { min-height: 80px; padding: 14px 18px 10px; }
+  .calculator-wrapper { gap: 10px; padding: 16px 16px 30px; }
 }
 @media (max-width: 480px) {
-  .calculator { width: calc(100vw - 32px); }
-  .calculator.sci-mode { width: calc(100vw - 32px); }
-  .btn { height: 58px; font-size: 15px; }
-  .sci-panel { grid-template-columns: repeat(4, 1fr); }
-  .btn-sci { font-size: 12px; height: 42px; }
+  .calculator { width: calc(100vw - 24px); }
+  .calculator.sci-mode { width: calc(100vw - 24px); }
+  .btn { height: 54px; font-size: 15px; }
+  .btn-sci { font-size: 12px; height: 40px; }
+  .btn-util { height: 40px; font-size: 12px; }
 }
