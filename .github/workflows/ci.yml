@@ -2,9 +2,9 @@ name: Java Calculator CI/CD
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ "main", "master" ]
+    branches: [ "master" ]
 
 jobs:
   # ── Job 1: Build & Test ───────────────────────────────────────────────
