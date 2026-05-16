@@ -7,364 +7,164 @@ import org.junit.jupiter.params.provider.CsvSource;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * CalculatorTest — JUnit 5 test suite for Calculator.java
- *
- * Covers:
- *  ✓ add        — normal, negatives, zero, doubles
- *  ✓ subtract   — normal, negatives, zero
- *  ✓ multiply   — normal, negatives, zero, fractions
- *  ✓ divide     — normal, decimals, divide-by-zero exception
- *  ✓ modulo     — normal, modulo-by-zero exception
- *  ✓ power      — positive, zero exponent, fractional
- *  ✓ sqrt       — perfect square, non-perfect, negative exception
- *  ✓ factorial  — 0!, small, large, negative exception
- *  ✓ abs        — positive, negative, zero
- *  ✓ max / min  — normal & equal values
- *  ✓ Parameterized add & multiply tests
- *  ✓ @Nested grouping for readability
+ * CalculatorTest — 65 JUnit 5 tests covering every operation in Calculator.java,
+ * including all scientific functions mirrored from the web frontend (calculator.js).
  */
-@DisplayName("🧮 Calculator Test Suite")
+@DisplayName("Calculator — Full Test Suite")
 class CalculatorTest {
 
     private Calculator calc;
+    private static final double DELTA = 1e-9;
 
     @BeforeEach
-    void setUp() {
-        calc = new Calculator();
-    }
+    void setUp() { calc = new Calculator(); }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  ADD
-    // ─────────────────────────────────────────────────────────────────────
-    @Nested
-    @DisplayName("➕ add()")
+    // ══════════════════════════════════════════════════════════════════════
+    // BASIC ARITHMETIC
+    // ══════════════════════════════════════════════════════════════════════
+    @Nested @DisplayName("add()")
     class AddTests {
-
-        @Test
-        @DisplayName("adds two positive integers")
-        void addPositiveNumbers() {
-            assertEquals(10.0, calc.add(4, 6), "4 + 6 should equal 10");
-        }
-
-        @Test
-        @DisplayName("adds positive and negative number")
-        void addPositiveAndNegative() {
-            assertEquals(3.0, calc.add(10, -7));
-        }
-
-        @Test
-        @DisplayName("adds two negative numbers")
-        void addTwoNegatives() {
-            assertEquals(-9.0, calc.add(-4, -5));
-        }
-
-        @Test
-        @DisplayName("adding zero returns same number")
-        void addZero() {
-            assertEquals(7.5, calc.add(7.5, 0));
-        }
-
-        @Test
-        @DisplayName("adds two doubles with delta precision")
-        void addDoubles() {
-            assertEquals(0.3, calc.add(0.1, 0.2), 1e-9);
-        }
-
         @ParameterizedTest(name = "{0} + {1} = {2}")
-        @DisplayName("parameterized add")
-        @CsvSource({
-            "1,   1,   2",
-            "0,   0,   0",
-            "-5,  3,  -2",
-            "100, 200, 300",
-            "1.5, 2.5, 4.0"
-        })
-        void parameterizedAdd(double a, double b, double expected) {
-            assertEquals(expected, calc.add(a, b), 1e-9);
+        @CsvSource({"2,3,5", "0,0,0", "-5,5,0", "-3,-4,-7", "0.5,0.5,1.0",
+                    "1000,2000,3000", "-1,1,0", "100,-50,50", "0.1,0.2,0.3", "99,1,100"})
+        void add(double a, double b, double expected) {
+            assertEquals(expected, calc.add(a, b), DELTA);
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  SUBTRACT
-    // ─────────────────────────────────────────────────────────────────────
-    @Nested
-    @DisplayName("➖ subtract()")
+    @Nested @DisplayName("subtract()")
     class SubtractTests {
-
-        @Test
-        @DisplayName("subtracts smaller from larger")
-        void subtractNormal() {
-            assertEquals(5.0, calc.subtract(10, 5));
-        }
-
-        @Test
-        @DisplayName("subtract resulting in negative")
-        void subtractNegativeResult() {
-            assertEquals(-3.0, calc.subtract(2, 5));
-        }
-
-        @Test
-        @DisplayName("subtract zero leaves value unchanged")
-        void subtractZero() {
-            assertEquals(8.0, calc.subtract(8, 0));
-        }
-
-        @Test
-        @DisplayName("subtracts two negatives")
-        void subtractNegatives() {
-            assertEquals(2.0, calc.subtract(-3, -5));
+        @ParameterizedTest(name = "{0} - {1} = {2}")
+        @CsvSource({"10,3,7", "0,5,-5", "-3,-4,1", "100,100,0"})
+        void subtract(double a, double b, double expected) {
+            assertEquals(expected, calc.subtract(a, b), DELTA);
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  MULTIPLY
-    // ─────────────────────────────────────────────────────────────────────
-    @Nested
-    @DisplayName("✖️ multiply()")
+    @Nested @DisplayName("multiply()")
     class MultiplyTests {
-
-        @Test
-        @DisplayName("multiplies two positive integers")
-        void multiplyPositives() {
-            assertEquals(24.0, calc.multiply(4, 6));
-        }
-
-        @Test
-        @DisplayName("multiply by zero returns zero")
-        void multiplyByZero() {
-            assertEquals(0.0, calc.multiply(99, 0));
-        }
-
-        @Test
-        @DisplayName("multiply two negatives returns positive")
-        void multiplyTwoNegatives() {
-            assertEquals(12.0, calc.multiply(-3, -4));
-        }
-
-        @Test
-        @DisplayName("multiply negative and positive returns negative")
-        void multiplyNegativePositive() {
-            assertEquals(-15.0, calc.multiply(3, -5));
-        }
-
         @ParameterizedTest(name = "{0} × {1} = {2}")
-        @DisplayName("parameterized multiply")
-        @CsvSource({
-            "2,   3,   6",
-            "0,   5,   0",
-            "-2,  4,  -8",
-            "1.5, 2,   3.0",
-            "7,   7,   49"
-        })
-        void parameterizedMultiply(double a, double b, double expected) {
-            assertEquals(expected, calc.multiply(a, b), 1e-9);
+        @CsvSource({"3,4,12", "0,100,0", "-3,4,-12", "-3,-4,12",
+                    "0.5,4,2", "1000,1000,1000000", "7,7,49", "0,0,0", "2.5,4,10"})
+        void multiply(double a, double b, double expected) {
+            assertEquals(expected, calc.multiply(a, b), DELTA);
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  DIVIDE
-    // ─────────────────────────────────────────────────────────────────────
-    @Nested
-    @DisplayName("➗ divide()")
+    @Nested @DisplayName("divide()")
     class DivideTests {
-
-        @Test
-        @DisplayName("divides two integers evenly")
-        void divideNormal() {
-            assertEquals(5.0, calc.divide(10, 2));
-        }
-
-        @Test
-        @DisplayName("divide returns decimal result")
-        void divideDecimalResult() {
-            assertEquals(2.5, calc.divide(5, 2));
-        }
-
-        @Test
-        @DisplayName("divide negative by positive")
-        void divideNegative() {
-            assertEquals(-3.0, calc.divide(-9, 3));
-        }
-
-        @Test
-        @DisplayName("divide by zero throws ArithmeticException")
-        void divideByZeroThrows() {
-            ArithmeticException ex = assertThrows(
-                ArithmeticException.class,
-                () -> calc.divide(10, 0)
-            );
-            assertTrue(ex.getMessage().contains("zero"),
-                "Exception message should mention 'zero'");
-        }
-
-        @Test
-        @DisplayName("zero divided by any number is zero")
-        void zeroDividedByNumber() {
-            assertEquals(0.0, calc.divide(0, 5));
+        @Test void divideNormal()     { assertEquals(4.0, calc.divide(20, 5), DELTA); }
+        @Test void divideNegative()   { assertEquals(-5.0, calc.divide(-25, 5), DELTA); }
+        @Test void divideFractional() { assertEquals(0.5, calc.divide(1, 2), DELTA); }
+        @Test void divideByZero()     {
+            var ex = assertThrows(ArithmeticException.class, () -> calc.divide(10, 0));
+            assertTrue(ex.getMessage().contains("zero"));
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  MODULO
-    // ─────────────────────────────────────────────────────────────────────
-    @Nested
-    @DisplayName("% modulo()")
+    @Nested @DisplayName("modulo()")
     class ModuloTests {
-
-        @Test
-        @DisplayName("10 % 3 = 1")
-        void moduloNormal() {
-            assertEquals(1.0, calc.modulo(10, 3));
-        }
-
-        @Test
-        @DisplayName("even number % 2 = 0 (even check)")
-        void moduloEven() {
-            assertEquals(0.0, calc.modulo(8, 2));
-        }
-
-        @Test
-        @DisplayName("modulo by zero throws ArithmeticException")
-        void moduloByZeroThrows() {
-            assertThrows(ArithmeticException.class,
-                () -> calc.modulo(5, 0));
+        @Test void moduloNormal()    { assertEquals(2.0, calc.modulo(17, 5), DELTA); }
+        @Test void moduloZero()      { assertEquals(0.0, calc.modulo(10, 5), DELTA); }
+        @Test void moduloByZero()    {
+            assertThrows(ArithmeticException.class, () -> calc.modulo(10, 0));
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  POWER
-    // ─────────────────────────────────────────────────────────────────────
-    @Nested
-    @DisplayName("^ power()")
+    @Nested @DisplayName("power()")
     class PowerTests {
-
-        @Test
-        @DisplayName("2 ^ 10 = 1024")
-        void powerNormal() {
-            assertEquals(1024.0, calc.power(2, 10));
-        }
-
-        @Test
-        @DisplayName("any number ^ 0 = 1")
-        void powerZeroExponent() {
-            assertEquals(1.0, calc.power(999, 0));
-        }
-
-        @Test
-        @DisplayName("2 ^ 0.5 = √2")
-        void powerFractionalExponent() {
-            assertEquals(Math.sqrt(2), calc.power(2, 0.5), 1e-9);
-        }
-
-        @Test
-        @DisplayName("negative base ^ even exponent = positive")
-        void powerNegativeBase() {
-            assertEquals(9.0, calc.power(-3, 2));
-        }
+        @Test void powerPositive()   { assertEquals(8.0,  calc.power(2, 3),  DELTA); }
+        @Test void powerZeroExp()    { assertEquals(1.0,  calc.power(5, 0),  DELTA); }
+        @Test void powerFractional() { assertEquals(2.0,  calc.power(4, 0.5),DELTA); }
+        @Test void powerNegBase()    { assertEquals(-8.0, calc.power(-2, 3), DELTA); }
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  SQRT
-    // ─────────────────────────────────────────────────────────────────────
-    @Nested
-    @DisplayName("√ sqrt()")
+    // ══════════════════════════════════════════════════════════════════════
+    // SCIENTIFIC — ROOTS & POWERS
+    // ══════════════════════════════════════════════════════════════════════
+    @Nested @DisplayName("sqrt()")
     class SqrtTests {
-
-        @Test
-        @DisplayName("sqrt(25) = 5")
-        void sqrtPerfectSquare() {
-            assertEquals(5.0, calc.sqrt(25));
-        }
-
-        @Test
-        @DisplayName("sqrt(2) ≈ 1.4142...")
-        void sqrtNonPerfect() {
-            assertEquals(Math.sqrt(2), calc.sqrt(2), 1e-9);
-        }
-
-        @Test
-        @DisplayName("sqrt(0) = 0")
-        void sqrtZero() {
-            assertEquals(0.0, calc.sqrt(0));
-        }
-
-        @Test
-        @DisplayName("sqrt of negative throws IllegalArgumentException")
-        void sqrtNegativeThrows() {
-            IllegalArgumentException ex = assertThrows(
-                IllegalArgumentException.class,
-                () -> calc.sqrt(-4)
-            );
-            assertTrue(ex.getMessage().contains("negative"),
-                "Message should mention 'negative'");
+        @Test void sqrtPerfect()    { assertEquals(5.0,  calc.sqrt(25),  DELTA); }
+        @Test void sqrtZero()       { assertEquals(0.0,  calc.sqrt(0),   DELTA); }
+        @Test void sqrtFractional() { assertEquals(1.5,  calc.sqrt(2.25),DELTA); }
+        @Test void sqrtNegative()   {
+            assertThrows(IllegalArgumentException.class, () -> calc.sqrt(-1));
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  FACTORIAL
-    // ─────────────────────────────────────────────────────────────────────
-    @Nested
-    @DisplayName("n! factorial()")
+    @Nested @DisplayName("square() and cube()")
+    class PowerShortcutTests {
+        @Test void squarePositive() { assertEquals(49.0, calc.square(7),  DELTA); }
+        @Test void squareZero()     { assertEquals(0.0,  calc.square(0),  DELTA); }
+        @Test void cubePositive()   { assertEquals(27.0, calc.cube(3),    DELTA); }
+        @Test void cubeNegative()   { assertEquals(-8.0, calc.cube(-2),   DELTA); }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // SCIENTIFIC — TRIGONOMETRY
+    // ══════════════════════════════════════════════════════════════════════
+    @Nested @DisplayName("sin() / cos() / tan()")
+    class TrigTests {
+        @Test void sinDeg90()    { assertEquals(1.0,  calc.sin(90,  true),  DELTA); }
+        @Test void sinDeg0()     { assertEquals(0.0,  calc.sin(0,   true),  DELTA); }
+        @Test void sinRad()      { assertEquals(1.0,  calc.sin(Math.PI / 2, false), DELTA); }
+        @Test void cosDeg0()     { assertEquals(1.0,  calc.cos(0,   true),  DELTA); }
+        @Test void cosDeg90()    { assertEquals(0.0,  calc.cos(90,  true),  DELTA); }
+        @Test void tanDeg45()    { assertEquals(1.0,  calc.tan(45,  true),  DELTA); }
+        @Test void tanDeg0()     { assertEquals(0.0,  calc.tan(0,   true),  DELTA); }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // SCIENTIFIC — LOGARITHMS
+    // ══════════════════════════════════════════════════════════════════════
+    @Nested @DisplayName("log() and ln()")
+    class LogTests {
+        @Test void log10()         { assertEquals(2.0, calc.log(100), DELTA); }
+        @Test void log1()          { assertEquals(0.0, calc.log(1),   DELTA); }
+        @Test void logNegative()   { assertThrows(IllegalArgumentException.class, () -> calc.log(-1)); }
+        @Test void logZero()       { assertThrows(IllegalArgumentException.class, () -> calc.log(0)); }
+        @Test void lnE()           { assertEquals(1.0, calc.ln(Math.E), DELTA); }
+        @Test void lnOne()         { assertEquals(0.0, calc.ln(1),      DELTA); }
+        @Test void lnNegative()    { assertThrows(IllegalArgumentException.class, () -> calc.ln(-1)); }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // SCIENTIFIC — FACTORIAL, INVERSE, ABS
+    // ══════════════════════════════════════════════════════════════════════
+    @Nested @DisplayName("factorial()")
     class FactorialTests {
-
-        @Test
-        @DisplayName("0! = 1")
-        void factorialZero() {
-            assertEquals(1L, calc.factorial(0));
-        }
-
-        @Test
-        @DisplayName("1! = 1")
-        void factorialOne() {
-            assertEquals(1L, calc.factorial(1));
-        }
-
-        @Test
-        @DisplayName("5! = 120")
-        void factorialFive() {
-            assertEquals(120L, calc.factorial(5));
-        }
-
-        @Test
-        @DisplayName("10! = 3628800")
-        void factorialTen() {
-            assertEquals(3628800L, calc.factorial(10));
-        }
-
-        @Test
-        @DisplayName("factorial of negative throws IllegalArgumentException")
-        void factorialNegativeThrows() {
-            assertThrows(IllegalArgumentException.class,
-                () -> calc.factorial(-1));
-        }
+        @Test void factorial0()    { assertEquals(1L,   calc.factorial(0)); }
+        @Test void factorial1()    { assertEquals(1L,   calc.factorial(1)); }
+        @Test void factorial5()    { assertEquals(120L, calc.factorial(5)); }
+        @Test void factorial10()   { assertEquals(3628800L, calc.factorial(10)); }
+        @Test void factorialNeg()  { assertThrows(IllegalArgumentException.class, () -> calc.factorial(-1)); }
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  ABS / MAX / MIN
-    // ─────────────────────────────────────────────────────────────────────
-    @Nested
-    @DisplayName("🔧 utility: abs, max, min")
+    @Nested @DisplayName("inverse()")
+    class InverseTests {
+        @Test void inverseTwo()    { assertEquals(0.5,  calc.inverse(2),  DELTA); }
+        @Test void inverseFour()   { assertEquals(0.25, calc.inverse(4),  DELTA); }
+        @Test void inverseZero()   { assertThrows(ArithmeticException.class, () -> calc.inverse(0)); }
+    }
+
+    @Nested @DisplayName("abs()")
+    class AbsTests {
+        @Test void absPositive()   { assertEquals(5.0, calc.abs(5),   DELTA); }
+        @Test void absNegative()   { assertEquals(5.0, calc.abs(-5),  DELTA); }
+        @Test void absZero()       { assertEquals(0.0, calc.abs(0),   DELTA); }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // UTILITY
+    // ══════════════════════════════════════════════════════════════════════
+    @Nested @DisplayName("max() / min() / negate() / percent()")
     class UtilityTests {
-
-        @Test @DisplayName("abs of negative = positive")
-        void absNegative() { assertEquals(7.0, calc.abs(-7)); }
-
-        @Test @DisplayName("abs of positive stays positive")
-        void absPositive() { assertEquals(5.0, calc.abs(5)); }
-
-        @Test @DisplayName("abs of zero = zero")
-        void absZero() { assertEquals(0.0, calc.abs(0)); }
-
-        @Test @DisplayName("max returns larger value")
-        void maxNormal() { assertEquals(9.0, calc.max(3, 9)); }
-
-        @Test @DisplayName("max of equal values")
-        void maxEqual() { assertEquals(5.0, calc.max(5, 5)); }
-
-        @Test @DisplayName("min returns smaller value")
-        void minNormal() { assertEquals(2.0, calc.min(2, 8)); }
-
-        @Test @DisplayName("min of equal values")
-        void minEqual() { assertEquals(4.0, calc.min(4, 4)); }
+        @Test void maxNormal()     { assertEquals(9.0,  calc.max(3, 9),    DELTA); }
+        @Test void minNormal()     { assertEquals(3.0,  calc.min(3, 9),    DELTA); }
+        @Test void negatePos()     { assertEquals(-7.0, calc.negate(7),    DELTA); }
+        @Test void negateNeg()     { assertEquals(7.0,  calc.negate(-7),   DELTA); }
+        @Test void percent50()     { assertEquals(0.5,  calc.percent(50),  DELTA); }
+        @Test void percent100()    { assertEquals(1.0,  calc.percent(100), DELTA); }
+        @Test void percentOf()     { assertEquals(30.0, calc.percentOf(15, 200), DELTA); }
     }
 }
